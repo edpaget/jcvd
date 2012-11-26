@@ -20,6 +20,9 @@
   ],
   "author": "Ed Paget",
   "license": "GPL",
+  "engines": {
+    "node" : ">=0.8"
+  },
   "dependencies" : {
     "express" : "3.x",
     "redis" : "0.8.x"
