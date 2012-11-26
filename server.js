@@ -56,46 +56,52 @@ app.get('/to-csv/:id', function(req, res) {
 });
 
 var toCSV = function(data) {
-  var headers = function(datum, prefix) {
-    prefix = typeof prefix !== 'undefined' ? prefix : '';
-    var header = new String();
-    for(var key in datum) {
-      var value = datum[key];
-      if(typeof value === 'object'){
-        header = header + headers(value, key + '_');
-      }
-      else {
-        header = header + ',' + prefix + key;
+  var header = function(data) {
+    var headers = new Array();
+    var addHeaders = function(datum, prefix) {
+      prefix = typeof prefix !== 'undefined' ? prefix : ''
+      for (var key in datum) {
+        if (headers.indexOf(prefix + key) === -1) {
+          var value = datum[key];
+          if (typeof value === 'object') {
+            addHeaders(value, key + '.');
+          } else if ((typeof value !== 'function') && (key !== "id")) {
+            headers.push(prefix + key);
+          }
+        }
       }
     }
-    return header;
-  };
+    for (var i in data) {
+      addHeaders(data[i]);
+    }
+    return headers;
+  }
 
-  var bodyLines = function(data) {
+  var body = function(data, headers) {
+    var lines = function(datum, headers) {
+      for(var i in headers) {
+        var header = headers[i];
+        if (header.match(/\./)) {
+          keys = header.split(/\./);
+          lines(datum[keys.shift()], [keys.join('.')]);
+        } else {
+          value = typeof datum[header] !== 'undefined' ? datum[header] : 'null';
+          console.log(header, value);
+          line.push(value);
+        }
+      }
+    }
+
     var body = new Array();
     for(var i in data) {
-      body.push(lines(data[i]).slice(1));
+      var line = new Array()
+      lines(data[i], headers);
+      body.push(line.join(','));
     }
     return body.join('\n');
-  };
+  }
 
-  var lines = function(datum) {
-    var line = new String;
-    for(var key in datum) {
-      var value = datum[key];
-      if(typeof value !== 'function'){
-        if(typeof value === 'object'){
-          line = line + lines(value);
-        }
-        else {
-          line = line + "," + value;
-        }
-      }
-    }
-    return line;
-  };
-
-  header = (headers(data[0]) + '\n').slice(1);
-  body = bodyLines(data)
-  return header + body
+  headers = header(data);
+  lines = body(data, headers);
+  return headers.join(',') + '\n' + lines
 };
