@@ -21,6 +21,8 @@ if ( port === 3001 ) {
   console.log("Connected to RegisToGo instance");
 }
 
+redis.flushall();
+
 var corsHeaders = function(res) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Credentials', true);
