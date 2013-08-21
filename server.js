@@ -41,6 +41,7 @@ app.post('/to-csv', function(req, res) {
       console.log(typeof json);
       redis.set(key, toCSV(json));
     }
+    redis.expire(key, 10000);
     body = JSON.stringify({ data_url: key }); 
     corsHeaders(res);
     res.setHeader('Content-Type', 'application/json');
