@@ -1,4 +1,5 @@
 var express = require('express');
+var crypto = require('crypto');
 
 var app = express();
 app.use(express.bodyParser());
@@ -33,23 +34,27 @@ app.options("*", function(req, res) {
 });
 
 app.post('/to-csv', function(req, res) {
-  key = Math.floor((Math.random() * 100000) + 1);
-  redis.set(key, toCSV(req.body));
-
-  body = JSON.stringify({ data_url: key }); 
-  corsHeaders(res);
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Conent-Length', body.length);
-  res.send(body);
+  json = req.body;
+  key = crypto.createHash('md5').update(JSON.stringify(json)).digest('hex');
+  redis.exists(key, function(err, reply) {
+    if (reply !== 1) {
+      console.log(typeof json);
+      redis.set(key, toCSV(json));
+    }
+    body = JSON.stringify({ data_url: key }); 
+    corsHeaders(res);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Conent-Length', body.length);
+    res.send(body);
+  });
 });
 
 app.get('/to-csv/:id', function(req, res) {
   var id = req.params.id
   csv = redis.get(id, function(err, reply) {
-    redis.del(id);
     corsHeaders(res);
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment;filename=navigator_data.csv');
+    res.setHeader('Content-Disposition', 'attachment;filename=data.csv');
     res.setHeader('Content-Length', reply.length);
     res.send(reply);
   });
@@ -86,7 +91,6 @@ var toCSV = function(data) {
           lines(datum[keys.shift()], [keys.join('.')]);
         } else {
           value = typeof datum[header] !== 'undefined' ? datum[header] : 'null';
-          console.log(header, value);
           line.push(value);
         }
       }
